@@ -32,6 +32,7 @@ type Encoder struct {
 	buf fflib.Buffer
 	w   io.Writer
 	enc *json.Encoder
+	fs  bool
 }
 
 // NewEncoder returns a reusable Encoder.
@@ -40,11 +41,26 @@ func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w: w, enc: json.NewEncoder(w)}
 }
 
+func (e *Encoder) ForceString() {
+	e.fs = true
+}
+
 // Encode the data in the supplied value to the stream
 // given on creation.
 // When the function returns the output has been
 // written to the stream.
 func (e *Encoder) Encode(v interface{}) error {
+	if f, ok := v.(marshalerFasterFS); ok {
+		e.buf.Reset()
+		err := f.MarshalJSONBufFS(&e.buf, e.fs)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(e.w, &e.buf)
+		return err
+	}
+
 	f, ok := v.(marshalerFaster)
 	if ok {
 		e.buf.Reset()

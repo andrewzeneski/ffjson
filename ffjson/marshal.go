@@ -28,6 +28,10 @@ type marshalerFaster interface {
 	MarshalJSONBuf(buf fflib.EncodingBuffer) error
 }
 
+type marshalerFasterFS interface {
+	MarshalJSONBufFS(buf fflib.EncodingBuffer, fs bool) error
+}
+
 type unmarshalFaster interface {
 	UnmarshalJSONFFLexer(l *fflib.FFLexer, state fflib.FFParseState) error
 }

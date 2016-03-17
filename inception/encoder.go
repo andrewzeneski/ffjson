@@ -167,6 +167,11 @@ func getGetInnerValue(ic *Inception, name string, typ reflect.Type, ptr bool, fo
 		reflect.Int32,
 		reflect.Int64:
 		ic.OutputImports[`fflib "github.com/pquerna/ffjson/fflib/v1"`] = true
+		if !forceString {
+			out += "if forceString {\n"
+			out += `buf.WriteByte('"')` + "\n"
+			out += "}\n"
+		}
 		out += "fflib.FormatBits2(buf, uint64(" + ptname + "), 10, " + ptname + " < 0)" + "\n"
 	case reflect.Uint,
 		reflect.Uint8,
@@ -175,12 +180,25 @@ func getGetInnerValue(ic *Inception, name string, typ reflect.Type, ptr bool, fo
 		reflect.Uint64,
 		reflect.Uintptr:
 		ic.OutputImports[`fflib "github.com/pquerna/ffjson/fflib/v1"`] = true
+		if !forceString {
+			out += "if forceString {\n"
+			out += `buf.WriteByte('"')` + "\n"
+			out += "}\n"
+		}
 		out += "fflib.FormatBits2(buf, uint64(" + ptname + "), 10, false)" + "\n"
 	case reflect.Float32:
 		ic.OutputImports[`fflib "github.com/pquerna/ffjson/fflib/v1"`] = true
+		if !forceString {
+			out += `buf.WriteByte('"')` + "\n"
+		}
 		out += "fflib.AppendFloat(buf, float64(" + ptname + "), 'g', -1, 32)" + "\n"
 	case reflect.Float64:
 		ic.OutputImports[`fflib "github.com/pquerna/ffjson/fflib/v1"`] = true
+		if !forceString {
+			out += "if forceString {\n"
+			out += `buf.WriteByte('"')` + "\n"
+			out += "}\n"
+		}
 		out += "fflib.AppendFloat(buf, float64(" + ptname + "), 'g', -1, 64)" + "\n"
 	case reflect.Array,
 		reflect.Slice:
@@ -338,6 +356,26 @@ func getValue(ic *Inception, sf *StructField, prefix string) string {
 		} else {
 			ic.q.Write(`"`)
 		}
+	} else {
+		switch sf.Typ.Kind() {
+		case reflect.Int,
+			reflect.Int8,
+			reflect.Int16,
+			reflect.Int32,
+			reflect.Int64,
+			reflect.Uint,
+			reflect.Uint8,
+			reflect.Uint16,
+			reflect.Uint32,
+			reflect.Uint64,
+			reflect.Uintptr,
+			reflect.Float32,
+			reflect.Float64:
+			//reflect.Bool:
+			out += "if forceString {\n"
+			out += `buf.WriteByte('"')` + "\n"
+			out += "}\n"
+		}
 	}
 
 	return out
@@ -486,6 +524,10 @@ func CreateMarshalJSON(ic *Inception, si *StructInfo) error {
 	out += `}` + "\n"
 
 	out += `func (mj *` + si.Name + `) MarshalJSONBuf(buf fflib.EncodingBuffer) (error) {` + "\n"
+	out += "  return mj.MarshalJSONBufFS(buf, false)\n"
+	out += `}` + "\n"
+
+	out += `func (mj *` + si.Name + `) MarshalJSONBufFS(buf fflib.EncodingBuffer, forceString bool) (error) {` + "\n"
 	out += `  if mj == nil {` + "\n"
 	out += `    buf.WriteString("null")` + "\n"
 	out += "    return nil" + "\n"

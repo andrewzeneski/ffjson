@@ -36,6 +36,25 @@ var validValues []string = []string{
 }
 
 func CreateUnmarshalJSON(ic *Inception, si *StructInfo) error {
+	for _, f := range si.Fields {
+		switch f.Typ.Kind() {
+		case reflect.Int,
+			reflect.Int8,
+			reflect.Int16,
+			reflect.Int32,
+			reflect.Int64,
+			reflect.Uint,
+			reflect.Uint8,
+			reflect.Uint16,
+			reflect.Uint32,
+			reflect.Uint64,
+			reflect.Uintptr,
+			reflect.Float32,
+			reflect.Float64,
+			reflect.Bool:
+			f.ForceString = true
+		}
+	}
 	out := ""
 	ic.OutputImports[`fflib "github.com/pquerna/ffjson/fflib/v1"`] = true
 	if len(si.Fields) > 0 {
